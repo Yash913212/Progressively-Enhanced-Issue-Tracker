@@ -1,0 +1,24 @@
+<div class="issue-card" id="issue-{{ issue.id }}" hx-swap-oob="true">
+    <div class="issue-card-header">
+        <h3 class="issue-card-title">
+            <a href="{% url 'issue_detail' issue.id %}">{{ issue.title }}</a>
+        </h3>
+        <span class="status-badge status-{{ issue.status }}">{{ issue.get_status_display_label }}</span>
+    </div>
+    {% if issue.description %}
+    <p class="issue-card-desc">{{ issue.description|truncatewords:20 }}</p>
+    {% endif %}
+    <div class="issue-card-footer">
+        <span class="issue-date">{{ issue.created_at|date:"M d" }}</span>
+        <div class="issue-card-actions">
+            <form method="post" action="{% url 'update_issue_status' issue.id %}" class="status-swap-form" hx-post="{% url 'update_issue_status' issue.id %}" hx-target="#issue-{{ issue.id }}" hx-swap="outerHTML">
+                {% csrf_token %}
+                <select name="status" class="status-select" onchange="this.form.submit()">
+                    {% for value, label in issue.STATUS_CHOICES %}
+                    <option value="{{ value }}" {% if issue.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+</div>

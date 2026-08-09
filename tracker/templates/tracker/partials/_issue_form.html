@@ -1,0 +1,26 @@
+<form method="post" action="{% url 'create_issue' project.id %}" class="issue-form" hx-post="{% url 'create_issue' project.id %}" hx-target="#issue-board" hx-swap="innerHTML">
+    {% csrf_token %}
+    <div class="form-group">
+        {{ issue_form.title.label_tag }}
+        {{ issue_form.title }}
+        {% if issue_form.title.errors %}
+        <span class="form-error">{{ issue_form.title.errors }}</span>
+        {% endif %}
+    </div>
+    <div class="form-group">
+        {{ issue_form.description.label_tag }}
+        {{ issue_form.description }}
+        {% if issue_form.description.errors %}
+        <span class="form-error">{{ issue_form.description.errors }}</span>
+        {% endif %}
+    </div>
+    <div class="form-group">
+        {{ issue_form.status.label_tag }}
+        {{ issue_form.status }}
+        {% if issue_form.status.errors %}
+        <span class="form-error">{{ issue_form.status.errors }}</span>
+        {% endif %}
+    </div>
+    <button type="submit" class="btn btn-primary">Create Issue</button>
+    <button type="button" class="btn btn-secondary" onclick="this.closest('details').removeAttribute('open')">Cancel</button>
+</form>

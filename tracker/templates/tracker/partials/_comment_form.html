@@ -1,0 +1,10 @@
+<form method="post" action="{% url 'add_comment' issue.id %}" class="comment-form" hx-post="{% url 'add_comment' issue.id %}" hx-target="#comments-list" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()">
+    {% csrf_token %}
+    <div class="form-group">
+        {{ comment_form.content }}
+        {% if comment_form.content.errors %}
+        <span class="form-error">{{ comment_form.content.errors }}</span>
+        {% endif %}
+    </div>
+    <button type="submit" class="btn btn-primary">Post Comment</button>
+</form>

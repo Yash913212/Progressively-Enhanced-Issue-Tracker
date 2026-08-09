@@ -1,0 +1,32 @@
+{% extends "tracker/base.html" %}
+
+{% block title %}Projects — Issue Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 id="page-title">Your Projects</h1>
+    <p class="page-subtitle">Select a project to view its issue board</p>
+</div>
+
+<div class="project-grid" id="project-list">
+    {% for project in projects %}
+    <a href="{% url 'project_board' project.id %}" class="project-card" id="project-card-{{ project.id }}">
+        <div class="project-card-header">
+            <span class="project-icon">📁</span>
+            <h2 class="project-name">{{ project.name }}</h2>
+        </div>
+        <p class="project-description">{{ project.description }}</p>
+        <div class="project-stats">
+            <span class="stat">
+                <span class="stat-count">{{ project.issues.count }}</span>
+                <span class="stat-label">issues</span>
+            </span>
+        </div>
+    </a>
+    {% empty %}
+    <div class="empty-state" id="empty-projects">
+        <p>No projects yet. Create one to get started!</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "tracker/base.html" %}
+
+{% block title %}{{ project.name }} — Issue Board{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumb" id="breadcrumb">
+        <a href="{% url 'project_list' %}" class="breadcrumb-link">Projects</a>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">{{ project.name }}</span>
+    </div>
+    <h1 id="page-title">{{ project.name }}</h1>
+    <p class="page-subtitle">{{ project.description }}</p>
+</div>
+
+<!-- Create Issue Form -->
+<details class="create-issue-section" id="create-issue-section">
+    <summary class="btn btn-primary" id="toggle-create-issue">
+        <span class="btn-icon">+</span> New Issue
+    </summary>
+    <div class="create-issue-form-wrapper">
+        {% include "tracker/partials/_issue_form.html" %}
+    </div>
+</details>
+
+<!-- Kanban Board -->
+<div class="board" id="issue-board">
+    <!-- To Do Column -->
+    <div class="board-column" id="column-todo">
+        <div class="column-header">
+            <span class="column-dot dot-todo"></span>
+            <h2 class="column-title">To Do</h2>
+            <span class="column-count" id="count-todo">{{ todo_issues.count }}</span>
+        </div>
+        <div class="column-body">
+            {% for issue in todo_issues %}
+                {% include "tracker/partials/_issue_card.html" %}
+            {% empty %}
+                <div class="empty-column" id="empty-todo">
+                    <p>No issues</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- In Progress Column -->
+    <div class="board-column" id="column-in-progress">
+        <div class="column-header">
+            <span class="column-dot dot-in-progress"></span>
+            <h2 class="column-title">In Progress</h2>
+            <span class="column-count" id="count-in-progress">{{ in_progress_issues.count }}</span>
+        </div>
+        <div class="column-body">
+            {% for issue in in_progress_issues %}
+                {% include "tracker/partials/_issue_card.html" %}
+            {% empty %}
+                <div class="empty-column" id="empty-in-progress">
+                    <p>No issues</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Done Column -->
+    <div class="board-column" id="column-done">
+        <div class="column-header">
+            <span class="column-dot dot-done"></span>
+            <h2 class="column-title">Done</h2>
+            <span class="column-count" id="count-done">{{ done_issues.count }}</span>
+        </div>
+        <div class="column-body">
+            {% for issue in done_issues %}
+                {% include "tracker/partials/_issue_card.html" %}
+            {% empty %}
+                <div class="empty-column" id="empty-done">
+                    <p>No issues</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

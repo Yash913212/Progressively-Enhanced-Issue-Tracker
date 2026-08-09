@@ -1,0 +1,8 @@
+<div class="comment" id="comment-{{ comment.id }}">
+    <div class="comment-body">
+        <p>{{ comment.content }}</p>
+    </div>
+    <div class="comment-meta">
+        <span class="comment-date">{{ comment.created_at|date:"M d, Y H:i" }}</span>
+    </div>
+</div>
