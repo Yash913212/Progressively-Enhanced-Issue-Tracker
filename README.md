@@ -1,95 +1,133 @@
 # Progressively Enhanced Issue Tracker
 
-A server-rendered issue tracker built with **Django** and progressively enhanced with **HTMX**. The application is fully functional with JavaScript disabled — every action works through standard HTML form posts with full-page reloads. When HTMX is active, the same endpoints return small HTML fragments that are swapped into the DOM without a reload.
+This is a Django-based Kanban issue tracker that uses **HTMX** for progressive enhancement. 
 
-## Architecture
+The core goal of the project was to build a system that works perfectly out of the box with standard HTML forms (with JavaScript completely disabled), but feels like a modern single-page app when JavaScript is enabled by dynamically swapping HTML fragments into the DOM.
 
-The core design principle is a single set of Django views that serve **two response modes** based on the `HX-Request` HTTP header:
+---
 
-| Request mode | Header | Response |
-|---|---|---|
-| Standard (no JS) | none | Full HTML page or 302 redirect |
-| Enhanced (HTMX) | `HX-Request: true` | Small HTML fragment (partial) |
+## How the Architecture Works
 
-```
-Browser ── POST /issues/42/update-status/
-              │
-              ├─ no HX-Request  ──▶ 302 → /projects/1/ (full reload)
-              └─ HX-Request     ──▶ 200 → <div class="issue-card">… (DOM swap)
-```
+Instead of separating the codebase into a backend API and a frontend SPA, the application uses a single set of Django views that serve **two response modes** depending on whether the request was made via HTMX:
 
-Full pages extend `base.html`; fragments live in `tracker/templates/tracker/partials/` (`_issue_card.html`, `_comment.html`, `_issue_form.html`, `_comment_form.html`) and are reused by both the full pages (via `{% include %}`) and the partial responses.
+* **Standard Request (No JS):** Returns a full HTML page or a `302 redirect`.
+* **Enhanced Request (HTMX):** Receives the `HX-Request: true` header and returns only a small HTML fragment (a template partial), which HTMX swaps directly into the page.
 
-## Models
+All reusable fragments (like issue cards, comment bubbles, and forms) live in `tracker/templates/tracker/partials/`. They are shared: the full-page views render them using Django's `{% include %}` tag, and the HTMX views return them directly.
 
-- **Project** — `name`, `description`
-- **Issue** — `title`, `description`, `status` (`todo` / `in_progress` / `done`), `project` (FK), `created_at`, `updated_at`
-- **Comment** — `content`, `issue` (FK), `created_at`
+---
 
 ## Getting Started (Docker)
 
-Requirements: Docker + Docker Compose.
+To run the entire setup (Django + PostgreSQL) in Docker:
 
 ```bash
+# 1. Copy the example env file
 cp .env.example .env
+
+# 2. Spin up the containers
 docker compose up --build -d
 ```
 
-A single `docker compose up` starts both services:
+This starts two services:
+1. `db`: PostgreSQL 16 (configured with a database health check).
+2. `web`: Django + Gunicorn (health checked via `/healthz/`).
 
-- `db` — PostgreSQL 16 (healthchecked with `pg_isready`)
-- `web` — Django + Gunicorn (healthchecked against `/healthz/`)
+On start, the container runs database migrations, seeds some sample data (only if the database is empty), collects static files, and starts Gunicorn.
 
-The `entrypoint.sh` script waits for the database, runs migrations, seeds sample data (idempotent — only seeds when empty), collects static files, and starts Gunicorn.
+Once running, open **http://localhost:8000** in your browser.
 
-Then open http://localhost:8000
-
-### Useful commands
-
+### Handy Docker Commands
 ```bash
-docker compose ps          # verify both services are healthy
-docker compose logs -f web # follow application logs
-docker compose down        # stop (add -v to remove the database volume)
+docker compose ps          # Check container status/health
+docker compose logs -f web # Follow the web server logs
+docker compose down        # Stop the services
 ```
 
-## Configuration (environment variables)
+---
 
-All variables are documented in [.env.example](.env.example):
+## Local Development (Without Docker)
 
-| Variable | Description |
-|---|---|
-| `SECRET_KEY` | Django secret key |
-| `DEBUG` | Django debug flag (`True`/`False`) |
-| `ALLOWED_HOSTS` | Comma-separated allowed hosts |
-| `DATABASE_URL` | Full PostgreSQL connection URL |
-| `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | PostgreSQL credentials |
-| `POSTGRES_HOST` / `POSTGRES_PORT` | PostgreSQL host/port |
+If you prefer to run it locally without Docker, the application automatically falls back to **SQLite** so you don't need to install or run Postgres.
 
-## Running tests
+```bash
+# 1. Set up a virtual environment
+python -m venv venv
+venv\Scripts\activate      # On Windows
+# source venv/bin/activate  # On macOS/Linux
 
-The test suite in `tracker/tests/` validates **both request modes**:
+# 2. Install dependencies
+pip install -r requirements.txt
 
-- **Standard tests** — full pages (200 with `<html>`) and redirects (302) for project boards, issue creation, status updates, and comments.
-- **Enhanced tests** — requests sent with `HTTP_HX_REQUEST='true'` assert a 200 response containing only the HTML fragment (no `<html>`/`<body>`), and verify database state.
+# 3. Create env file
+copy .env.example .env     # On Windows
+# cp .env.example .env     # On macOS/Linux
 
+# 4. Migrate and seed database
+python manage.py migrate
+python manage.py seed_data
+
+# 5. Start the server
+python manage.py runserver
+```
+
+---
+
+## Running the Test Suite
+
+The test suite validates both standard full-page reloads/redirects and HTMX fragment responses.
+
+**To run tests inside Docker:**
 ```bash
 docker compose exec web python manage.py test
 ```
 
-Or locally (uses SQLite for speed):
-
+**To run tests locally (uses SQLite):**
 ```bash
-set DATABASE_URL=sqlite:///db.sqlite3 && python manage.py test tracker
+python manage.py test tracker
 ```
 
-## Endpoints
+**For Windows terminal (with explicit database settings):**
+```powershell
+$env:DATABASE_URL="sqlite:///db.sqlite3"; python manage.py test tracker
+```
 
-| Method | URL | Purpose | Standard | HTMX |
-|---|---|---|---|---|
-| GET | `/` | Project list | Full page | — |
-| GET | `/projects/{id}/` | Issue board grouped by status | Full page | — |
-| GET | `/issues/{id}/` | Issue detail + comments | Full page | — |
-| POST | `/projects/{id}/issues/create/` | Create issue | 302 | card partial |
-| POST | `/issues/{id}/update-status/` | Update status | 302 | card partial |
-| POST | `/issues/{id}/comments/add/` | Add comment | 302 | comment partial |
-| GET | `/healthz/` | Docker healthcheck | JSON | — |
+---
+
+## Project Structure & Endpoints
+
+### Models
+* **Project:** Holds issues (`name`, `description`).
+* **Issue:** Tasks with status `todo`, `in_progress`, or `done`. Linked to a project.
+* **Comment:** Simple text comments linked to an issue.
+
+### URL Endpoints
+* `GET /` — Project list page
+* `GET /projects/<id>/` — Kanban board for a project
+* `GET /issues/<id>/` — Issue detail and comment view
+* `POST /projects/<id>/issues/create/` — Create a new issue (redirects on standard, returns card partial on HTMX)
+* `POST /issues/<id>/update-status/` — Update an issue's status (redirects on standard, returns card partial on HTMX)
+* `POST /issues/<id>/comments/add/` — Comment on an issue (redirects on standard, returns comment partial on HTMX)
+* `GET /healthz/` — Health check endpoint for Docker/Gunicorn
+
+---
+
+## Design Decisions & Trade-offs
+
+### 1. Progressive Enhancement over SPA Architecture
+Using a single Django codebase rather than a split Django-REST/React setup saved a massive amount of development overhead. By leveraging HTMX, we get 90% of the SPA user experience with 10% of the complexity. If JS is disabled or fails to load, the site still functions completely.
+
+### 2. Dual-Mode Views (`_is_htmx`)
+I wrote a small helper function `_is_htmx(request)` that checks for the `HX-Request` header. This serves as a clean branch point in the views. If true, we render the target partial; if false, we redirect or render the full page. Keeping this logic in function-based views makes the flow very easy to trace.
+
+### 3. Dry Templates using Shared Partials
+I placed the partial templates inside a `partials/` folder. This ensures that the code for rendering an issue card or a comment is defined in exactly one place. When Django renders the project board, it loops and includes `_issue_card.html`. When HTMX updates an issue's status, it hits the view and returns that exact same `_issue_card.html` file. 
+
+### 4. Zero-Config Local Development
+To make onboarding and local testing painless, the `settings.py` file uses `sqlite:///db.sqlite3` as a default if `DATABASE_URL` is missing. This means developers can run tests or start the server locally in a clean environment without needing to install or manage a Postgres server.
+
+### 5. Whitenoise for Simple Assets
+I chose Whitenoise to serve static files. It hooks directly into Django's WSGI application flow, compressing and caching files. This avoids the overhead of setting up and maintaining an Nginx container just to serve simple CSS and HTMX scripts.
+
+### 6. Robust Container Startup
+The `entrypoint.sh` script runs a python snippet that retries the database connection for up to 60 seconds before throwing an error. This prevents the web container from crashing if Postgres takes a few seconds longer to start up on a cold run.

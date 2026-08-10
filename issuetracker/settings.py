@@ -62,10 +62,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'issuetracker.wsgi.application'
 
 # Database
+# Default to SQLite for local development/testing; override DATABASE_URL for PostgreSQL (Docker).
 DATABASES = {
     'default': env.db(
         'DATABASE_URL',
-        default='postgres://tracker_user:tracker_password@db:5432/tracker_db',
+        default='sqlite:///db.sqlite3',
     ),
 }
 
